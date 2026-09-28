@@ -26,6 +26,7 @@
       const [activeTab, setActiveTab] = useState('dzisiaj');
       const [pasteInput, setPasteInput] = useState('');
       const [manualEntry, setManualEntry] = useState({ time: '', name: '', kcal: '', protein: '', fats: '', carbs: '' });
+      const [showBackupAlert, setShowBackupAlert] = useState(false);
 
       const getTodayString = () => new Date().toISOString().split('T')[0];
       const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -35,6 +36,13 @@
         const savedGoals = localStorage.getItem('nutrition_goals');
         if (savedLogs) setLogs(JSON.parse(savedLogs));
         if (savedGoals) setGoals(JSON.parse(savedGoals));
+
+        // Sprawdzenie przypomnienia o backupie raz dziennie
+        const lastBackupDate = localStorage.getItem('last_backup_reminder');
+        const today = getTodayString();
+        if (lastBackupDate !== today) {
+          setShowBackupAlert(true);
+        }
       }, []);
 
       useEffect(() => {
@@ -95,6 +103,10 @@
         a.download = `trener_backup_${getTodayString()}.json`;
         a.click();
         URL.revokeObjectURL(url);
+
+        // Oznaczenie, że dzisiaj zrobiono backup
+        localStorage.setItem('last_backup_reminder', getTodayString());
+        setShowBackupAlert(false);
       };
 
       const importBackup = (e) => {
@@ -163,6 +175,19 @@
           </header>
 
           <main className="p-4">
+            {/* Alert przypominający o backupie */}
+            {showBackupAlert && (
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-3 mb-4 rounded shadow-sm flex justify-between items-center">
+                <div className="text-xs text-amber-800">
+                  <span className="font-bold block">Dzisiejsza kopia zapasowa</span>
+                  Zrób backup danych w ustawieniach, aby nic nie stracić.
+                </div>
+                <button onClick={() => setActiveTab('ustawienia')} className="bg-amber-500 text-white px-3 py-1 rounded text-xs font-bold whitespace-nowrap ml-2">
+                  Przejdź
+                </button>
+              </div>
+            )}
+
             {activeTab === 'dzisiaj' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm">
