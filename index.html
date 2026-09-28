@@ -158,6 +158,9 @@
                 <div className="bg-white p-5 rounded-xl shadow-sm space-y-4">
                   <h3 className="font-bold text-gray-700 text-sm">Dodaj posiłek</h3>
                   <form onSubmit={handlePasteSubmit} className="flex gap-2">
+                    <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center bg-purple-100 text-purple-700 text-xl rounded px-3 border border-purple-200" title="Zrób zdjęcie w Gemini">
+                      📸
+                    </a>
                     <input type="text" value={pasteInput} onChange={(e) => setPasteInput(e.target.value)} placeholder="Wklej linię z czatu" className="flex-1 border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500" />
                     <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm">Zapisz</button>
                   </form>
