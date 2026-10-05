@@ -27,6 +27,7 @@
       const [pasteInput, setPasteInput] = useState('');
       const [manualEntry, setManualEntry] = useState({ time: '', name: '', kcal: '', protein: '', fats: '', carbs: '' });
       const [showBackupAlert, setShowBackupAlert] = useState(false);
+      const [coffeeCount, setCoffeeCount] = useState(0);
 
       const getTodayString = () => new Date().toISOString().split('T')[0];
       const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -34,12 +35,21 @@
       useEffect(() => {
         const savedLogs = localStorage.getItem('nutrition_logs');
         const savedGoals = localStorage.getItem('nutrition_goals');
+        const savedCoffee = localStorage.getItem('coffee_count');
+        const savedCoffeeDate = localStorage.getItem('coffee_date');
+        
         if (savedLogs) setLogs(JSON.parse(savedLogs));
         if (savedGoals) setGoals(JSON.parse(savedGoals));
 
-        // Sprawdzenie przypomnienia o backupie raz dziennie
-        const lastBackupDate = localStorage.getItem('last_backup_reminder');
         const today = getTodayString();
+        if (savedCoffeeDate === today && savedCoffee) {
+          setCoffeeCount(JSON.parse(savedCoffee));
+        } else {
+          setCoffeeCount(0);
+          localStorage.setItem('coffee_date', today);
+        }
+
+        const lastBackupDate = localStorage.getItem('last_backup_reminder');
         if (lastBackupDate !== today) {
           setShowBackupAlert(true);
         }
@@ -49,6 +59,11 @@
         localStorage.setItem('nutrition_logs', JSON.stringify(logs));
         localStorage.setItem('nutrition_goals', JSON.stringify(goals));
       }, [logs, goals]);
+
+      useEffect(() => {
+        localStorage.setItem('coffee_count', JSON.stringify(coffeeCount));
+        localStorage.setItem('coffee_date', getTodayString());
+      }, [coffeeCount]);
 
       const handlePasteSubmit = (e) => {
         e.preventDefault();
@@ -95,7 +110,7 @@
       const deleteLog = (id) => setLogs((prev) => prev.filter(log => log.id !== id));
 
       const exportBackup = () => {
-        const data = { goals, logs };
+        const data = { goals, logs, coffeeCount };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -104,7 +119,6 @@
         a.click();
         URL.revokeObjectURL(url);
 
-        // Oznaczenie, że dzisiaj zrobiono backup
         localStorage.setItem('last_backup_reminder', getTodayString());
         setShowBackupAlert(false);
       };
@@ -118,6 +132,7 @@
             const data = JSON.parse(event.target.result);
             if (data.goals) setGoals(data.goals);
             if (data.logs) setLogs(data.logs);
+            if (data.coffeeCount !== undefined) setCoffeeCount(data.coffeeCount);
             alert("Backup został pomyślnie wgrany!");
           } catch (err) {
             alert("Błąd odczytu pliku JSON.");
@@ -161,6 +176,14 @@
         return dates;
       };
 
+      const toggleCoffee = (index) => {
+        if (coffeeCount === index + 1) {
+          setCoffeeCount(index);
+        } else {
+          setCoffeeCount(index + 1);
+        }
+      };
+
       return (
         <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20 font-sans shadow-lg">
           <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
@@ -175,7 +198,6 @@
           </header>
 
           <main className="p-4">
-            {/* Alert przypominający o backupie */}
             {showBackupAlert && (
               <div className="bg-amber-50 border-l-4 border-amber-500 p-3 mb-4 rounded shadow-sm flex justify-between items-center">
                 <div className="text-xs text-amber-800">
@@ -194,6 +216,28 @@
                   <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="px-3 py-1 bg-gray-200 rounded text-gray-700 font-bold">&lt;</button>
                   <span className="font-semibold text-gray-700">{selectedDate === getTodayString() ? 'Dzisiaj' : selectedDate}</span>
                   <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="px-3 py-1 bg-gray-200 rounded text-gray-700 font-bold">&gt;</button>
+                </div>
+
+                {/* Checklista Kawy */}
+                <div className="bg-white p-4 rounded-xl shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-gray-700 text-sm">☕ Dzienny limit kawy ({coffeeCount}/5)</h3>
+                    <button onClick={() => setCoffeeCount(0)} className="text-xs text-gray-400 hover:text-red-500">Reset</button>
+                  </div>
+                  <div className="flex justify-between gap-1">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <button
+                        key={i}
+                        onClick={() => toggleCoffee(i)}
+                        className={`flex-1 py-2 rounded-lg font-bold text-xs flex flex-col items-center justify-center transition-all ${
+                          i < coffeeCount ? 'bg-amber-700 text-white shadow' : 'bg-gray-100 text-gray-400 border border-gray-200'
+                        }`}
+                      >
+                        <span>☕</span>
+                        <span>{i + 1}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl shadow-sm text-center">
