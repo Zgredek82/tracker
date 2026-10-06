@@ -16,7 +16,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useMemo } = React;
 
     const DEFAULT_GOALS = { calories: 2050, protein: 155, fats: 140, carbs: 40 };
 
@@ -65,10 +65,37 @@
         localStorage.setItem('coffee_date', getTodayString());
       }, [coffeeCount]);
 
+      // Unikalne nazwy potraw z historii do autouzupełniania
+      const uniqueMealNames = useMemo(() => {
+        const names = logs.map(l => l.name);
+        return [...new Set(names)].filter(Boolean);
+      }, [logs]);
+
+      // Obsługa automatycznego uzupełniania makro po wybraniu z historii
+      const handleNameChange = (e) => {
+        const nameVal = e.target.value;
+        setManualEntry(prev => {
+          const matched = logs.slice().reverse().find(l => l.name.toLowerCase() === nameVal.toLowerCase());
+          if (matched) {
+            return {
+              ...prev,
+              name: nameVal,
+              kcal: matched.kcal,
+              protein: matched.protein,
+              fats: matched.fats,
+              carbs: matched.carbs
+            };
+          }
+          return { ...prev, name: nameVal };
+        });
+      };
+
       const handlePasteSubmit = (e) => {
         e.preventDefault();
+        // Zamiana przecinków na kropki automatycznie
+        const sanitizedInput = pasteInput.replace(/,/g, '.');
         const regex = /DZIENNIK\s*\|\s*([\d-]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*(\d+(?:\.\d+)?)\s*[a-zA-Z]*\s*\|\s*B\s*(\d+(?:\.\d+)?)\s*[a-zA-Z]*\s*\|\s*T\s*(\d+(?:\.\d+)?)\s*[a-zA-Z]*\s*\|\s*W\s*(\d+(?:\.\d+)?)/i;
-        const match = pasteInput.match(regex);
+        const match = sanitizedInput.match(regex);
         
         if (match) {
           const [, date, meal, name, kcal, p, f, c] = match;
@@ -261,15 +288,35 @@
                     <input type="text" value={pasteInput} onChange={(e) => setPasteInput(e.target.value)} placeholder="Wklej linię z czatu" className="flex-1 border p-2 rounded text-sm focus:ring-2 focus:ring-blue-500" />
                     <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm">Zapisz</button>
                   </form>
-                  <details className="text-sm">
-                    <summary className="text-blue-500 font-semibold cursor-pointer py-2">Ręczne wprowadzanie</summary>
+
+                  <details className="text-sm" open>
+                    <summary className="text-blue-500 font-semibold cursor-pointer py-2">Ręczne wprowadzanie / Pamięć posiłków</summary>
                     <form onSubmit={handleManualSubmit} className="mt-3 space-y-2 flex flex-wrap gap-2 bg-gray-50 p-3 rounded">
-                      <input type="text" placeholder="Nazwa dania" className="w-full border p-2 rounded" value={manualEntry.name} onChange={e => setManualEntry({...manualEntry, name: e.target.value})} required/>
-                      <input type="number" placeholder="Kcal" className="flex-1 border p-2 rounded" value={manualEntry.kcal} onChange={e => setManualEntry({...manualEntry, kcal: e.target.value})} required/>
-                      <input type="number" placeholder="B (g)" className="w-16 border p-2 rounded" value={manualEntry.protein} onChange={e => setManualEntry({...manualEntry, protein: e.target.value})}/>
-                      <input type="number" placeholder="T (g)" className="w-16 border p-2 rounded" value={manualEntry.fats} onChange={e => setManualEntry({...manualEntry, fats: e.target.value})}/>
-                      <input type="number" placeholder="W (g)" className="w-16 border p-2 rounded" value={manualEntry.carbs} onChange={e => setManualEntry({...manualEntry, carbs: e.target.value})}/>
-                      <button type="submit" className="w-full bg-green-500 text-white p-2 rounded font-bold">Dodaj</button>
+                      <div className="w-full relative">
+                        <input 
+                          type="text" 
+                          list="history-meals"
+                          placeholder="Zacznij pisać nazwę posiłku..." 
+                          className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" 
+                          value={manualEntry.name} 
+                          onChange={handleNameChange} 
+                          required
+                        />
+                        <datalist id="history-meals">
+                          {uniqueMealNames.map((name, idx) => (
+                            <option key={idx} value={name} />
+                          ))}
+                        </datalist>
+                      </div>
+                      
+                      <div className="flex gap-2 w-full">
+                        <input type="number" placeholder="Kcal" className="flex-1 border p-2 rounded" value={manualEntry.kcal} onChange={e => setManualEntry({...manualEntry, kcal: e.target.value})} required/>
+                        <input type="number" placeholder="B (g)" className="w-20 border p-2 rounded" value={manualEntry.protein} onChange={e => setManualEntry({...manualEntry, protein: e.target.value})}/>
+                        <input type="number" placeholder="T (g)" className="w-20 border p-2 rounded" value={manualEntry.fats} onChange={e => setManualEntry({...manualEntry, fats: e.target.value})}/>
+                        <input type="number" placeholder="W (g)" className="w-20 border p-2 rounded" value={manualEntry.carbs} onChange={e => setManualEntry({...manualEntry, carbs: e.target.value})}/>
+                      </div>
+
+                      <button type="submit" className="w-full bg-green-500 text-white p-2 rounded font-bold">Dodaj do dziennika</button>
                     </form>
                   </details>
                 </div>
