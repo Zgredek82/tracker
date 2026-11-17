@@ -94,6 +94,10 @@
       }, [logs, goals, profile, weightEntries, waistEntries, waterEntries, workouts, dietMode, goalsByDiet]);
 
       useEffect(() => {
+        setGoalsByDiet(prev => ({ ...prev, [dietMode]: goals }));
+      }, [goals, dietMode]);
+
+      useEffect(() => {
         localStorage.setItem('coffee_count', JSON.stringify(coffeeCount));
         localStorage.setItem('coffee_date', getTodayString());
       }, [coffeeCount]);
