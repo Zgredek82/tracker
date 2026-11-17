@@ -21,8 +21,10 @@ self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(key => ![APP_CACHE, RUNTIME_CACHE].includes(key))
-          .map(key => caches.delete(key))
+        keys.filter(key =>
+          key.startsWith("trener-tracker-") &&
+          ![APP_CACHE, RUNTIME_CACHE].includes(key)
+        ).map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   );
