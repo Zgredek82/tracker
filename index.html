@@ -94,10 +94,6 @@
       }, [logs, goals, profile, weightEntries, waistEntries, waterEntries, workouts, dietMode, goalsByDiet]);
 
       useEffect(() => {
-        setGoalsByDiet(prev => ({ ...prev, [dietMode]: goals }));
-      }, [goals, dietMode]);
-
-      useEffect(() => {
         localStorage.setItem('coffee_count', JSON.stringify(coffeeCount));
         localStorage.setItem('coffee_date', getTodayString());
       }, [coffeeCount]);
@@ -546,7 +542,7 @@
                     {Object.entries({calories: 'Kalorie (kcal)', protein: 'Białko (g)', fats: 'Tłuszcze (g)', carbs: 'Węglowodany (g)'}).map(([key, label]) => (
                       <div key={key}>
                         <label className="block text-sm text-gray-600">{label}</label>
-                        <input type="number" value={goals[key]} onChange={e => setGoals({...goals, [key]: Number(e.target.value)})} className="border p-2 rounded w-full"/>
+                        <input type="number" value={goals[key]} onChange={e => { const next = { ...goals, [key]: Number(e.target.value) }; setGoals(next); setGoalsByDiet(prev => ({ ...prev, [dietMode]: next })); }} className="border p-2 rounded w-full"/>
                       </div>
                     ))}
                   </div>
